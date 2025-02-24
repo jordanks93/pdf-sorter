@@ -5,12 +5,12 @@ import pdfplumber
 # Define categories and keywords
 CATEGORIES = {
     "Credit Application": ["credit application"],
-    "Invoices": ["invoice number", "bill to"],
+    "Invoices": ["invoice number", "invoice date", "invoice amount", "invoice due date"],
     "Deal Summary": ["deal summary", "transaction details"],
-    "Credit Report": ["experian", "equifax", "credit report"],
+    "Credit Report": ["experian", "equifax", "credit report", "transunion", "credit bureau", "credit score", "fico"],
     "PayNet Report": ["paynet"],
-    "Financials": ["balance sheet", "profit and loss", "financial statement"],
-    "Tax Returns": ["1040", "1120", "irs", "tax return", "W2"]
+    "Financials": ["balance sheet", "profit and loss", "financial statement", "income statement", "cash flow", "statement of cash flows", "statement of financial position", "statement of operations"],
+    "Tax Returns": ["1040", "1120", "irs", "tax return", "w2", "1099", "tax form", "tax document", "tax filing"],
 }
 
 def get_directory(prompt):
@@ -40,22 +40,37 @@ def classify_pdf(pdf_path):
             return category
     return "Uncategorized"
 
-def sort_pdfs(input_dir, output_dir):
-    """Sort PDFs into categorized folders."""
-    for category in CATEGORIES.keys():
-        os.makedirs(os.path.join(output_dir, category), exist_ok=True)
-    os.makedirs(os.path.join(output_dir, "Uncategorized"), exist_ok=True)
+def sort_pdfs(input_dir):
+    """Sort PDFs into a 'sorted' folder within the current folder by copying them in the correct order."""
+    sorted_dir = os.path.join(input_dir, "sorted")
+    os.makedirs(sorted_dir, exist_ok=True)
+
+    sorted_files = {category: [] for category in CATEGORIES.keys()}
+    sorted_files["Uncategorized"] = []
 
     for filename in os.listdir(input_dir):
         if filename.endswith(".pdf"):
             file_path = os.path.join(input_dir, filename)
             category = classify_pdf(file_path)
-            dest_dir = os.path.join(output_dir, category)
-            shutil.move(file_path, os.path.join(dest_dir, filename))
-            print(f"Moved {filename} to {category}/")
+            sorted_files[category].append(filename)
+
+    ordered_categories = [
+        "Credit Application", "Invoices", "Deal Summary", "Credit Report",
+        "PayNet Report", "Financials", "Tax Returns", "Uncategorized"
+    ]
+
+    for index, category in enumerate(ordered_categories):
+        files = sorted_files[category]
+        for filename in files:
+            new_filename = f"{index + 1:02d}_{filename}"
+            shutil.copy(
+                os.path.join(input_dir, filename),
+                os.path.join(sorted_dir, new_filename)
+            )
+            print(f"Copied {filename} to {sorted_dir} as {new_filename}")
+            print(filename + " -> " + category)
 
 if __name__ == "__main__":
     input_dir = get_directory("Enter the path to the folder containing PDFs: ")
-    output_dir = get_directory("Enter the path to the folder where sorted PDFs should be placed: ")
-    sort_pdfs(input_dir, output_dir)
+    sort_pdfs(input_dir)
     print("Sorting complete!")
